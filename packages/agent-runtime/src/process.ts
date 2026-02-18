@@ -92,20 +92,22 @@ interface AgentConfig {
 
 	// Resume data for pre-seeding task history before extension activation
 	// This ensures the extension can find the task when showTaskWithId is called
-	resumeData?: {
-		sessionId: string
-		prompt: string
-		images?: string[]
-		uiMessages: unknown[]
-		apiConversationHistory: unknown[]
-		metadata: {
+		resumeData?: {
 			sessionId: string
-			title: string
-			createdAt: string
-			mode: string | null
+			prompt: string
+			images?: string[]
+			uiMessages: unknown[]
+			apiConversationHistory: unknown[]
+			metadata: {
+				sessionId: string
+				title: string
+				createdAt: string
+				mode: string | null
+			}
 		}
+		// Secrets (e.g. OAuth credentials) to inject so providers like OpenAI Codex work in the agent process
+		secrets?: Record<string, string>
 	}
-}
 
 /**
  * Session metadata for constructing a HistoryItem
@@ -304,6 +306,10 @@ async function main(): Promise<void> {
 				}
 
 				await extensionHost.injectConfiguration(stateConfig)
+				// Inject OAuth/secrets so providers like OpenAI Codex can authenticate
+				if (config.secrets && Object.keys(config.secrets).length > 0) {
+					await extensionHost.injectSecrets(config.secrets)
+				}
 				logs.info("Configuration injected", "AgentProcess")
 			} catch (error) {
 				logs.error("Failed to inject configuration", "AgentProcess", { error })
